@@ -16,6 +16,7 @@ using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Microsoft.UI;
+using Microsoft.UI.Xaml.Documents;
 
 
 
@@ -37,6 +38,8 @@ namespace Test_App
         public MainWindow()
         {
             this.InitializeComponent();
+            this.AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(500, 870, 500, 870));
+            Congratulation.Visibility = Visibility.Collapsed;
             AddSessionHistory();
             this.Title = "Test App";
 
@@ -55,6 +58,7 @@ namespace Test_App
 
         private void AccelerateButton_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            //AddSessionHistory(); //for testing SessionHistory
             decreaseTimer.Stop(); 
             increaseTimer.Start(); 
         }
@@ -82,7 +86,7 @@ namespace Test_App
         {
             if (accelerationHeight < 200) 
             {
-                accelerationHeight += 2; 
+                accelerationHeight += 3; 
                 accelerationRectangle.Height = accelerationHeight;
                 UpdateRectangleColor();
             }
@@ -106,22 +110,71 @@ namespace Test_App
             }
         }
 
-        private void UpdateRectangleColor()
+        private bool isDialogOpen = false; 
+
+        private async void UpdateRectangleColor()
         {
             if (accelerationHeight >= MaxHeight)
             {
                 accelerationRectangle.Fill = new SolidColorBrush(Colors.Red);
+                Congratulation.Visibility = Visibility.Visible;
+
+                if (!isDialogOpen)
+                {
+                    isDialogOpen = true; 
+
+                    ContentDialog dialog = new ContentDialog()
+                    {
+                        Title = "Congratulations🥳",
+                        Content = "Nice Work✨. Adding New Session",
+                        CloseButtonText = "OK",
+                    };
+                    dialog.XamlRoot = AccelerateButton.XamlRoot;
+
+                    ContentDialogResult result = await dialog.ShowAsync();
+
+                    if (result == ContentDialogResult.None) 
+                    {
+                        Congratulation.Visibility = Visibility.Collapsed;
+                        AddSessionHistory(); // For Session History Checking
+                    }
+
+                    isDialogOpen = false; 
+                }
             }
             else
             {
                 accelerationRectangle.Fill = new SolidColorBrush(Colors.Blue);
+                //Congratulation.Visibility = Visibility.Collapsed;
             }
         }
 
         private void AddSessionHistory()
         {
-            string sessionInfo = $"Login time: {DateTime.Now:yyyy-MM-dd | hh:mm tt} | Session {sessionHistoryList.Items.Count + 1}";
-            sessionHistoryList.Items.Add(new ListViewItem { Content = sessionInfo });
+            string loginTimeText = $"Login time: {DateTime.Now:yyyy-MM-dd | hh:mm tt}";
+            string sessionText = $" Session {sessionHistoryList.Items.Count + 1}";
+
+            var loginTimeTextBlock = new TextBlock
+            {
+                Text = loginTimeText,
+                Foreground = new SolidColorBrush(Colors.Gray),
+                Margin = new Thickness(0, 5, 0, 0)
+            };
+
+            var sessionTextBlock = new TextBlock
+            {
+                Text = sessionText,
+                Foreground = new SolidColorBrush(Colors.Black),
+                Margin = new Thickness(-4, 0, 0, 0)
+            };
+
+            var stackPanel = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Children = { loginTimeTextBlock, sessionTextBlock }
+            };
+
+            sessionHistoryList.Items.Add(new ListViewItem { Content = stackPanel });
         }
 
     }
